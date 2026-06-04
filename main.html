@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Calculator</title>
+<style>
+  body {
+    font-family: sans-serif;
+    display: flex;
+    gap: 40px;
+    padding: 30px;
+    background: #f0f0f0;
+  }
+
+  h2 {
+    margin: 0 0 10px;
+  }
+
+  /* Calculator */
+  .calculator {
+    background: white;
+    border: 1px solid #ccc;
+    padding: 16px;
+    width: 220px;
+  }
+
+  #display {
+    width: 100%;
+    text-align: right;
+    font-size: 22px;
+    padding: 6px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+
+  .buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .buttons button {
+    padding: 12px 0;
+    font-size: 16px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background: white;
+  }
+
+  .buttons button:hover {
+    background: #e8e8e8;
+  }
+
+  .span2 { grid-column: span 2; }
+
+  /* Problems */
+  .problems {
+    background: white;
+    border: 1px solid #ccc;
+    padding: 16px;
+    width: 260px;
+  }
+
+  .problem {
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .problem p {
+    font-size: 18px;
+    margin: 0 0 6px;
+  }
+
+  .problem input {
+    width: 80px;
+    font-size: 16px;
+    padding: 4px;
+    border: 1px solid #ccc;
+    margin-right: 6px;
+  }
+
+  .problem button {
+    font-size: 14px;
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+
+  .feedback {
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  #score {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  #newset {
+    margin-top: 12px;
+    padding: 6px 14px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="calculator">
+  <h2>Calculator</h2>
+  <input type="text" id="display" value="0" readonly />
+  <div class="buttons">
+    <button onclick="clearAll()">AC</button>
+    <button onclick="inputOp('/')">÷</button>
+    <button onclick="inputOp('*')">×</button>
+    <button onclick="inputOp('-')">−</button>
+
+    <button onclick="inputNum('7')">7</button>
+    <button onclick="inputNum('8')">8</button>
+    <button onclick="inputNum('9')">9</button>
+    <button onclick="inputOp('+')">+</button>
+
+    <button onclick="inputNum('4')">4</button>
+    <button onclick="inputNum('5')">5</button>
+    <button onclick="inputNum('6')">6</button>
+    <button onclick="calculate()">=</button>
+
+    <button onclick="inputNum('1')">1</button>
+    <button onclick="inputNum('2')">2</button>
+    <button onclick="inputNum('3')">3</button>
+    <button class="span2" onclick="inputNum('0')">0</button>
+    <button onclick="inputDot()">.</button>
+  </div>
+</div>
+
+<div class="problems">
+  <h2>Math Problems</h2>
+  <div id="score">Score: 0 / 5</div>
+  <div id="problemsList"></div>
+  <button id="newset" onclick="generateProblems()">New Problems</button>
+</div>
+
+<script>
+  // --- for operations ---
+  let display = document.getElementById('display');
+  let current = '0';
+  let op1 = null;
+  let operator = null;
+  let justCalc = false;
+
+  function updateDisplay(v) { display.value = v; }
+
+  function inputNum(n) {
+    if (justCalc) { current = n; justCalc = false; }
+    else if (current === '0') current = n;
+    else current += n;
+    updateDisplay(current);
+  }
+
+  function inputDot() {
+    if (justCalc) { current = '0.'; justCalc = false; }
+    else if (!current.includes('.')) current += '.';
+    updateDisplay(current);
+  }
+
+  function inputOp(op) {
+    if (op1 !== null && operator && !justCalc) {
+      const r = calc(op1, parseFloat(current), operator);
+      op1 = r; current = String(r); updateDisplay(current);
+    } else {
+      op1 = parseFloat(current);
+    }
+    operator = op;
+    justCalc = true;
+  }
+
+  function calc(a, b, op) {
+    if (op === '+') return round(a + b);
+    if (op === '-') return round(a - b);
+    if (op === '*') return round(a * b);
+    if (op === '/') return b !== 0 ? round(a / b) : 0;
+  }
+
+  function round(n) { return Math.round(n * 1e9) / 1e9; }
+
+  function calculate() {
+    if (op1 === null || !operator) return;
+    const r = calc(op1, parseFloat(current), operator);
+    current = String(r);
+    updateDisplay(current);
+    op1 = null; operator = null; justCalc = true;
+  }
+
+  function clearAll() {
+    current = '0'; op1 = null; operator = null; justCalc = false;
+    updateDisplay('0');
+  }
+
+  // --- Problems ---
+  let problems = [];
+  let score = 0;
+
+  function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function makeProblem() {
+    const ops = ['+', '-'];
+    const op = ops[rand(0, 1)];
+    let a = rand(1, 20);
+    let b = rand(1, 20);
+    if (op === '-' && b > a) { let t = a; a = b; b = t; }
+    const ans = op === '+' ? a + b : a - b;
+    const sym = op === '+' ? '+' : '−';
+    return { text: `${a} ${sym} ${b} = ?`, answer: ans, done: false };
+  }
+
+  function generateProblems() {
+    problems = Array.from({ length: 5 }, makeProblem);
+    score = 0;
+    document.getElementById('score').textContent = 'Score: 0 / 5';
+    renderProblems();
+  }
+
+  function renderProblems() {
+    const list = document.getElementById('problemsList');
+    list.innerHTML = '';
+    problems.forEach((p, i) => {
+      const div = document.createElement('div');
+      div.className = 'problem';
+      if (p.done) {
+        div.innerHTML = `<p>${p.text}</p><p style="color:green">✓ Correct! Answer: ${p.answer}</p>`;
+      } else {
+        div.innerHTML = `
+          <p>${p.text}</p>
+          <input type="number" id="inp${i}" placeholder="answer" />
+          <button onclick="check(${i})">Check</button>
+          <div class="feedback" id="fb${i}"></div>
+        `;
+      }
+      list.appendChild(div);
+    });
+  }
+
+  function check(i) {
+    const val = parseFloat(document.getElementById('inp' + i).value);
+    const fb = document.getElementById('fb' + i);
+    if (isNaN(val)) { fb.textContent = 'Enter a number.'; return; }
+    if (val === problems[i].answer) {
+      problems[i].done = true;
+      score++;
+      document.getElementById('score').textContent = `Score: ${score} / 5`;
+      renderProblems();
+    } else {
+      fb.textContent = 'Wrong, try again.';
+    }
+  }
+
+  generateProblems();
+</script>
+</body>
+</html>
